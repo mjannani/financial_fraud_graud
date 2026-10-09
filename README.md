@@ -1,4 +1,4 @@
-# FraudGuard AI — Fixed Advanced Version
+# FINANCIAL FRAUD DETECTION — Fixed Advanced Version
 
 ## Run locally
 1. Extract this ZIP.
