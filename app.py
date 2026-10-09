@@ -277,49 +277,6 @@ elif page == "Analytics":
         )
         st.plotly_chart(fig, width='stretch')
 
-    st.markdown("### 🔗 Numeric Feature Correlation")
-
-    # Keep only numeric columns and remove duplicate names.
-    numeric_df=res.select_dtypes(include=["number","bool"]).copy()
-    numeric_df=numeric_df.loc[:, ~numeric_df.columns.duplicated(keep="first")]
-
-    if numeric_df.shape[1] >= 2:
-        corr=numeric_df.corr()
-
-        # Remove duplicate row/column labels.
-        corr=corr.loc[
-            ~corr.index.duplicated(keep="first"),
-            ~corr.columns.duplicated(keep="first")
-        ]
-
-        # Keep matching row/column labels only.
-        common_cols=[c for c in corr.columns if c in corr.index]
-        corr=corr.loc[common_cols, common_cols]
-
-        # Clean invalid correlation values.
-        corr=corr.replace([np.inf,-np.inf],np.nan).fillna(0)
-
-        if corr.shape[0] >= 2:
-            # IMPORTANT:
-            # Use a NumPy array so Plotly/Narwhals never receives
-            # a Pandas DataFrame with duplicate column names.
-            fig=px.imshow(
-                corr.to_numpy(),
-                x=corr.columns.tolist(),
-                y=corr.index.tolist(),
-                text_auto=".2f",
-                aspect="auto",
-                color_continuous_scale="RdBu",
-                zmin=-1,
-                zmax=1,
-                title="Correlation Heatmap"
-            )
-            st.plotly_chart(fig,width="stretch")
-        else:
-            st.info("Correlation heatmap needs at least two unique numeric columns.")
-    else:
-        st.info("Correlation heatmap needs at least two unique numeric columns.")
-
 else:
     st.subheader("🤖 Model Performance")
     st.caption(f"Scoring method: {mode}")
