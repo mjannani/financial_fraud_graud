@@ -1,23 +1,19 @@
-# FraudGuard AI — Advanced Financial Fraud Detection
+# FraudGuard AI — Fixed Advanced Version
 
-## Run on Windows
-1. Install Python 3.10+
-2. Open CMD in this folder
-3. `pip install -r requirements.txt`
-4. `streamlit run app.py`
+## Run locally
+1. Extract this ZIP.
+2. Open Command Prompt in this folder.
+3. Install packages: `pip install -r requirements.txt`
+4. Start the dashboard: `streamlit run app.py`
 
-## Features
-- Advanced dark dashboard UI
-- CSV upload
-- Random Forest supervised fraud detection
-- Isolation Forest anomaly detection
-- 0–100 risk score
-- Configurable high-risk threshold
-- Approve / Manual Review / Block decisions
-- Investigation queue
-- Risk explanations / reason codes
-- Analytics charts
-- Model metrics
-- Download scored CSV and investigation queue
+## Deploy to Streamlit Community Cloud
+Push `app.py` and `requirements.txt` to your GitHub repository and set `app.py` as the main file.
 
-If your dataset has a target column with a different name, rename it to `Fraud` (0/1) for supervised model metrics.
+## Fixes
+- String transaction IDs such as `TXN-00586` are excluded from model features.
+- Categorical columns are one-hot encoded rather than being passed to scikit-learn as raw strings.
+- Fraud target columns are detected from common names.
+- If a usable labelled fraud column is missing, anomaly-based scoring is used and the app does not display misleading supervised accuracy.
+- Keeps the dark dashboard, risk scoring, queue, charts, and CSV exports.
+
+Note: This is an educational decision-support demo, not a production payment-blocking system. Validate on representative labelled data before real-world use.
