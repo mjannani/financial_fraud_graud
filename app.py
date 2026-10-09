@@ -128,6 +128,13 @@ with st.sidebar:
 try:
     if uploaded:
         df=pd.read_csv(uploaded)
+
+        # Remove duplicate column names from uploaded CSV.
+        # Example: two columns named "Fraud_Label".
+        df=df.loc[:, ~df.columns.duplicated(keep="first")]
+
+        # Clean column-name whitespace.
+        df.columns=df.columns.astype(str).str.strip()
     else:
         df=demo_data()
 except Exception as e:
@@ -169,12 +176,12 @@ if page=="Overview":
     c1,c2=st.columns(2)
     with c1:
         fig=px.pie(res,names="Decision",title="Decision Distribution",hole=.55,template="plotly_dark")
-        st.plotly_chart(fig,use_container_width=True)
+        st.plotly_chart(fig,width='stretch')
     with c2:
         fig=px.histogram(res,x="Risk Score",nbins=25,title="Risk Score Distribution",template="plotly_dark")
-        st.plotly_chart(fig,use_container_width=True)
+        st.plotly_chart(fig,width='stretch')
     st.markdown("### 🚨 Top Risk Transactions")
-    st.dataframe(res.sort_values("Risk Score",ascending=False).head(10),use_container_width=True,hide_index=True)
+    st.dataframe(res.sort_values("Risk Score",ascending=False).head(10),width='stretch',hide_index=True)
 
 elif page=="Transaction Scoring":
     st.subheader("🔍 Transaction Risk Scoring")
@@ -201,7 +208,7 @@ elif page=="Investigation Queue":
     st.subheader("🚨 Investigator Workbench")
     q=res[res["Decision"]!="APPROVE"].sort_values("Risk Score",ascending=False)
     st.write(f"{len(q):,} transactions require attention.")
-    st.dataframe(q,use_container_width=True,hide_index=True)
+    st.dataframe(q,width='stretch',hide_index=True)
     st.download_button("⬇️ Export Investigation Queue",q.to_csv(index=False).encode("utf-8"),"investigation_queue.csv","text/csv")
 
 elif page == "Analytics":
@@ -217,7 +224,7 @@ elif page == "Analytics":
             title="Amount by Decision",
             template="plotly_dark"
         )
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width='stretch')
 
     with c2:
         type_col = next(
@@ -239,7 +246,7 @@ elif page == "Analytics":
                 title="Average Risk by Transaction Type",
                 template="plotly_dark"
             )
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width='stretch')
         else:
             fig = px.histogram(
                 res,
@@ -247,7 +254,7 @@ elif page == "Analytics":
                 title="Transactions by Decision",
                 template="plotly_dark"
             )
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width='stretch')
 
     hour_col = next(
         (
@@ -268,52 +275,50 @@ elif page == "Analytics":
             title="Risk by Hour",
             template="plotly_dark"
         )
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width='stretch')
 
     st.markdown("### 🔗 Numeric Feature Correlation")
 
-    # Remove duplicate column names before creating the heatmap
-    numeric_df = res.select_dtypes(
-        include=["number", "bool"]
-    ).copy()
-
-    numeric_df = numeric_df.loc[
-        :, ~numeric_df.columns.duplicated(keep="first")
-    ]
+    # Keep only numeric columns and remove duplicate names.
+    numeric_df=res.select_dtypes(include=["number","bool"]).copy()
+    numeric_df=numeric_df.loc[:, ~numeric_df.columns.duplicated(keep="first")]
 
     if numeric_df.shape[1] >= 2:
-        # Build a clean correlation matrix for Plotly/Narwhals.
-        corr = numeric_df.corr(numeric_only=True)
-        corr = corr.loc[~corr.index.duplicated(keep="first"),
-                        ~corr.columns.duplicated(keep="first")].copy()
+        corr=numeric_df.corr()
 
-        # Correlation matrices should have the same unique row/column labels.
-        common = [c for c in corr.columns if c in corr.index]
-        corr = corr.loc[common, common]
-        corr = corr.replace([np.inf, -np.inf], np.nan).fillna(0)
+        # Remove duplicate row/column labels.
+        corr=corr.loc[
+            ~corr.index.duplicated(keep="first"),
+            ~corr.columns.duplicated(keep="first")
+        ]
 
-        if corr.shape[0] >= 2 and corr.shape[1] >= 2:
-            fig = px.imshow(
+        # Keep matching row/column labels only.
+        common_cols=[c for c in corr.columns if c in corr.index]
+        corr=corr.loc[common_cols, common_cols]
+
+        # Clean invalid correlation values.
+        corr=corr.replace([np.inf,-np.inf],np.nan).fillna(0)
+
+        if corr.shape[0] >= 2:
+            # IMPORTANT:
+            # Use a NumPy array so Plotly/Narwhals never receives
+            # a Pandas DataFrame with duplicate column names.
+            fig=px.imshow(
                 corr.to_numpy(),
                 x=corr.columns.tolist(),
                 y=corr.index.tolist(),
-                text_auto=True,
+                text_auto=".2f",
                 aspect="auto",
                 color_continuous_scale="RdBu",
                 zmin=-1,
                 zmax=1,
                 title="Correlation Heatmap"
             )
-
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig,width="stretch")
         else:
-            st.info(
-                "Correlation heatmap needs at least two unique numeric columns."
-            )
+            st.info("Correlation heatmap needs at least two unique numeric columns.")
     else:
-        st.info(
-            "Correlation heatmap needs at least two unique numeric columns."
-        )
+        st.info("Correlation heatmap needs at least two unique numeric columns.")
 
 else:
     st.subheader("🤖 Model Performance")
