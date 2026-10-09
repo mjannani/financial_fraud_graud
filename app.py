@@ -204,19 +204,112 @@ elif page=="Investigation Queue":
     st.dataframe(q,use_container_width=True,hide_index=True)
     st.download_button("⬇️ Export Investigation Queue",q.to_csv(index=False).encode("utf-8"),"investigation_queue.csv","text/csv")
 
-elif page=="Analytics":
+elif page == "Analytics":
     st.subheader("📈 Fraud Analytics")
-    c1,c2=st.columns(2)
+
+    c1, c2 = st.columns(2)
+
     with c1:
-        fig=px.box(res,x="Decision",y="Amount",title="Amount by Decision",template="plotly_dark")
-        st.plotly_chart(fig,use_container_width=True)
+        fig = px.box(
+            res,
+            x="Decision",
+            y="Amount",
+            title="Amount by Decision",
+            template="plotly_dark"
+        )
+        st.plotly_chart(fig, use_container_width=True)
+
     with c2:
-        type_col=next((c for c in res.columns if str(c).strip().lower() in ["type","transaction_type","transaction type"]),None)
+        type_col = next(
+            (
+                c for c in res.columns
+                if str(c).strip().lower()
+                in ["type", "transaction_type", "transaction type"]
+            ),
+            None
+        )
+
         if type_col:
-            g=res.groupby(type_col,as_index=False)["Risk Score"].mean()
-            fig=px.bar(g,x=type_col,y="Risk Score",title="Average Risk by Transaction Type",template="plotly_dark")
-            st.plotly_chart(fig,use_container_width=True)
+            g = res.groupby(type_col, as_index=False)["Risk Score"].mean()
+
+            fig = px.bar(
+                g,
+                x=type_col,
+                y="Risk Score",
+                title="Average Risk by Transaction Type",
+                template="plotly_dark"
+            )
+            st.plotly_chart(fig, use_container_width=True)
         else:
+            fig = px.histogram(
+                res,
+                x="Decision",
+                title="Transactions by Decision",
+                template="plotly_dark"
+            )
+            st.plotly_chart(fig, use_container_width=True)
+
+    hour_col = next(
+        (
+            c for c in res.columns
+            if str(c).strip().lower() in ["hour", "transaction_hour"]
+        ),
+        None
+    )
+
+    if hour_col:
+        h = res.groupby(hour_col, as_index=False)["Risk Score"].mean()
+
+        fig = px.line(
+            h,
+            x=hour_col,
+            y="Risk Score",
+            markers=True,
+            title="Risk by Hour",
+            template="plotly_dark"
+        )
+        st.plotly_chart(fig, use_container_width=True)
+
+    st.markdown("### 🔗 Numeric Feature Correlation")
+
+    # Remove duplicate column names before creating the heatmap
+    numeric_df = res.select_dtypes(
+        include=["number", "bool"]
+    ).copy()
+
+    numeric_df = numeric_df.loc[
+        :, ~numeric_df.columns.duplicated(keep="first")
+    ]
+
+    if numeric_df.shape[1] >= 2:
+        corr = numeric_df.corr(numeric_only=True)
+
+        # Ensure row and column labels are unique
+        corr = corr.loc[
+            ~corr.index.duplicated(keep="first"),
+            ~corr.columns.duplicated(keep="first")
+        ]
+
+        if corr.shape[0] >= 2 and corr.shape[1] >= 2:
+            fig = px.imshow(
+                corr,
+                text_auto=True,
+                aspect="auto",
+                color_continuous_scale="RdBu",
+                zmin=-1,
+                zmax=1,
+                title="Correlation Heatmap"
+            )
+
+            st.plotly_chart(fig, use_container_width=True)
+        else:
+            st.info(
+                "Correlation heatmap needs at least two unique numeric columns."
+            )
+    else:
+        st.info(
+            "Correlation heatmap needs at least two unique numeric columns."
+        )
             fig=px.histogram(res,x="Decision",title="Transactions by Decision",template="plotly_dark")
             st.plotly_chart(fig,use_container_width=True)
     hour_col=next((c for c in res.columns if str(c).strip().lower() in ["hour","transaction_hour"]),None)
