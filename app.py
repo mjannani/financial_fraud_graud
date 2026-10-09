@@ -10,7 +10,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 
-st.set_page_config(page_title="FraudGuard AI", page_icon="🛡️", layout="wide", initial_sidebar_state="expanded")
+st.set_page_config(page_title="FINANCIAL FRAUD DETECTION", page_icon="🛡️", layout="wide", initial_sidebar_state="expanded")
 st.markdown("""<style>
 /* ===== MAIN DARK BACKGROUND ===== */
 [data-testid="stAppViewContainer"] {
