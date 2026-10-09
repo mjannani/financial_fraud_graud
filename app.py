@@ -282,17 +282,21 @@ elif page == "Analytics":
     ]
 
     if numeric_df.shape[1] >= 2:
+        # Build a clean correlation matrix for Plotly/Narwhals.
         corr = numeric_df.corr(numeric_only=True)
+        corr = corr.loc[~corr.index.duplicated(keep="first"),
+                        ~corr.columns.duplicated(keep="first")].copy()
 
-        # Ensure row and column labels are unique
-        corr = corr.loc[
-            ~corr.index.duplicated(keep="first"),
-            ~corr.columns.duplicated(keep="first")
-        ]
+        # Correlation matrices should have the same unique row/column labels.
+        common = [c for c in corr.columns if c in corr.index]
+        corr = corr.loc[common, common]
+        corr = corr.replace([np.inf, -np.inf], np.nan).fillna(0)
 
         if corr.shape[0] >= 2 and corr.shape[1] >= 2:
             fig = px.imshow(
-                corr,
+                corr.to_numpy(),
+                x=corr.columns.tolist(),
+                y=corr.index.tolist(),
                 text_auto=True,
                 aspect="auto",
                 color_continuous_scale="RdBu",
@@ -310,13 +314,6 @@ elif page == "Analytics":
         st.info(
             "Correlation heatmap needs at least two unique numeric columns."
         )
-            fig=px.histogram(res,x="Decision",title="Transactions by Decision",template="plotly_dark")
-            st.plotly_chart(fig,use_container_width=True)
-    hour_col=next((c for c in res.columns if str(c).strip().lower() in ["hour","transaction_hour"]),None)
-    if hour_col:
-        h=res.groupby(hour_col,as_index=False)["Risk Score"].mean()
-        fig=px.line(h,x=hour_col,y="Risk Score",markers=True,title="Risk by Hour",template="plotly_dark")
-        st.plotly_chart(fig,use_container_width=True)
 
 else:
     st.subheader("🤖 Model Performance")
